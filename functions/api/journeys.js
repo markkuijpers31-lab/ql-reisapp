@@ -1,6 +1,8 @@
 /*
- * Quinlan ReisApp — daily journey planner (Cloudflare Pages Function)
- * ------------------------------------------------------------------
+ * Quinlan ReisApp — daily journey planner
+ * ----------------------------------------
+ * Used by src/worker.js (Cloudflare Worker); also Pages-Functions compatible.
+ *
  * Route is FIXED (it's a gag app for one perpetually-late colleague):
  *
  *   FROM  Verlengde Duinvallei 131, 1361 BR Almere

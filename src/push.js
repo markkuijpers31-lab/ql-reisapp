@@ -1,32 +1,23 @@
 /*
- * Quinlan ReisApp — daily morning push (Cloudflare Worker with cron trigger)
- * -------------------------------------------------------------------------
- * Every weekday morning this pings every saved subscription so the colleague
- * gets a notification reminding them there's really no excuse.
+ * Quinlan ReisApp — daily morning push logic
+ * ------------------------------------------
+ * Called by the worker's scheduled handler (see src/worker.js and the
+ * [triggers] crons in wrangler.toml). Every weekday morning this pings every
+ * saved subscription so the colleague gets a notification reminding them
+ * there's really no excuse.
  *
  * We send a "no payload" push (only VAPID auth headers). That triggers the
  * service worker's `push` event, which shows a default message — no need for
  * the more complex AES-GCM payload encryption. Simple and reliable.
  *
- * Bindings (see worker/wrangler.toml):
- *   SUBSCRIPTIONS      KV namespace (shared with the Pages project)
+ * Bindings (see wrangler.toml):
+ *   SUBSCRIPTIONS      KV namespace with the stored push subscriptions
  *   VAPID_PRIVATE_JWK  secret: the EC P-256 private key as a JWK string
  *   VAPID_PUBLIC_KEY   var: base64url public key
  *   VAPID_SUBJECT      var: e.g. "mailto:jij@example.com"
  */
 
-export default {
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(sendAll(env));
-  },
-  // Manual trigger for testing:  GET /  -> sends immediately
-  async fetch(_req, env) {
-    const sent = await sendAll(env);
-    return new Response(`Pushed to ${sent} subscription(s).`);
-  },
-};
-
-async function sendAll(env) {
+export async function sendAll(env) {
   if (!env.SUBSCRIPTIONS || !env.VAPID_PRIVATE_JWK) return 0;
 
   const list = await env.SUBSCRIPTIONS.list({ prefix: "sub:" });

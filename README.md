@@ -15,10 +15,11 @@ The route is intentionally fixed — this is a gag app, not a real planner.
 
 | Piece | What it does |
 |-------|--------------|
-| `public/` | The 8-bit PWA (HTML/CSS/JS, hand-drawn pixel sprites, manifest, service worker). |
-| `functions/api/journeys.js` | Cloudflare Pages Function. Geocodes the two addresses and asks MOTIS for journeys arriving by 08:30, returns the last 5. |
+| `src/worker.js` | **The Cloudflare Worker entrypoint.** Routes `/api/*`, serves the PWA via the assets binding, and runs the daily push cron. |
+| `public/` | The 8-bit PWA (HTML/CSS/JS, hand-drawn pixel sprites, manifest, service worker). Served as Worker static assets. |
+| `functions/api/journeys.js` | Journey logic: geocodes the two addresses and asks MOTIS for journeys arriving by 08:30, returns the last 5. Imported by the worker (also Pages-compatible). |
 | `functions/api/subscribe.js` · `vapid.js` | Push-notification endpoints (store subscription, expose the public key). |
-| `worker/daily-push.js` | Separate Cloudflare Worker with a cron trigger that pings everyone every weekday morning. |
+| `src/push.js` | Sends the weekday-morning push to every stored subscription (VAPID, dependency-free). |
 | `tools/` | Asset + VAPID key generators (no dependencies). |
 
 ### Transit data
@@ -54,10 +55,10 @@ Quinlan is the mascot and the whole thing plays like a mini-game (state saved in
 
 ```bash
 npm install
-npm run dev          # wrangler pages dev (serves public/ + functions/)
+npm run dev          # wrangler dev (worker + static assets)
 ```
 
-Open http://localhost:8788 and tap **PLAN MIJN RIT**.
+Open http://localhost:8787 and tap **PLAN MIJN RIT**.
 
 The app icon is Quinlan himself (grinning, arcade sunburst, pixel platform).
 Regenerate after changing the portrait sprite:
@@ -68,14 +69,17 @@ npm run gen:assets   # writes public/icons/icon.svg + rasterize.html
 # and save the base64 <div>s as PNGs (viewport-independent, pixel-perfect)
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy to Cloudflare Workers
 
 ```bash
-npx wrangler pages deploy      # uses wrangler.toml (output dir = public/)
+npm install
+npx wrangler deploy      # one worker: PWA assets + /api/* + push cron
 ```
 
-Or connect the repo in the Cloudflare dashboard (Pages → build output `public`).
-Functions in `functions/` are picked up automatically.
+That's it — `wrangler.toml` points at `src/worker.js` and serves `public/` as
+static assets (`run_worker_first` keeps `/api/*` on the worker). The weekday
+cron (05:15 UTC ≈ 07:15 NL zomertijd) is registered automatically and is a
+no-op until push is configured.
 
 ## Enable the daily morning push (optional — "elke ochtend wekken")
 
@@ -83,19 +87,17 @@ Functions in `functions/` are picked up automatically.
    ```bash
    npm run gen:vapid
    ```
-2. **Create a KV namespace** for subscriptions and bind it as `SUBSCRIPTIONS`
-   in both `wrangler.toml` (Pages) and `worker/wrangler.toml` (Worker):
+2. **Create a KV namespace** for subscriptions and uncomment the
+   `SUBSCRIPTIONS` binding in `wrangler.toml`:
    ```bash
    npx wrangler kv namespace create SUBSCRIPTIONS
    ```
-3. **Configure the Pages project**: set `VAPID_PUBLIC_KEY`, uncomment the KV
-   binding in `wrangler.toml`, and redeploy.
-4. **Deploy the cron worker**:
+3. **Set the keys**: put the public key in `wrangler.toml` (`VAPID_PUBLIC_KEY`,
+   plus your e-mail in `VAPID_SUBJECT`) and store the private key as a secret:
    ```bash
-   cd worker
    npx wrangler secret put VAPID_PRIVATE_JWK   # paste the JWK from step 1
-   npx wrangler deploy                          # cron: weekday 05:15 UTC (~07:15 NL)
    ```
+4. **Redeploy** (`npx wrangler deploy`).
 5. In the app, tap **🔔 WEK MIJ** to grant notification permission and subscribe.
 
 Until the keys are configured the button still works — it shows a local test
