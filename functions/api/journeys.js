@@ -20,13 +20,20 @@ const MOTIS = "https://api.transitous.org";
 const TZ = "Europe/Amsterdam";
 const UA = "QuinlanReisApp/1.0 (+https://github.com/markkuijpers31-lab/ql-reisapp)";
 
-const FROM_ADDRESS = "Verlengde Duinvallei 131, 1361 BR Almere";
+// NB: officiële straatnaam is "Verlengde Duinvalleiweg" (wijk DUIN, Poort).
+const FROM_ADDRESS = "Verlengde Duinvalleiweg 131, 1361 BR Almere";
 const TO_ADDRESS = "Rondebeltweg 51, 1329 BP Almere";
+// Zip prefixes used to pick the right geocoder match.
+const FROM_ZIP = "1361";
+const TO_ZIP = "1329";
+// Public label for the origin — the real address stays out of UI and API.
+const FROM_LABEL = "Thuisbasis Quinlan 🤫";
 
 // Rough Almere-area bias + safety fallbacks if geocoding ever hiccups.
+// (from: DUIN-Zuid bij de Verlengde Duinvalleiweg; to: Rondebeltweg / A6)
 const ALMERE_BIAS = { lat: 52.3708, lon: 5.2647 };
-const FROM_FALLBACK = { lat: 52.3389, lon: 5.1636, name: FROM_ADDRESS };
-const TO_FALLBACK = { lat: 52.3986, lon: 5.2903, name: TO_ADDRESS };
+const FROM_FALLBACK = { lat: 52.3375, lon: 5.1520, name: FROM_ADDRESS };
+const TO_FALLBACK = { lat: 52.3677, lon: 5.2721, name: TO_ADDRESS };
 
 const ARRIVE_HOUR = 8;
 const ARRIVE_MIN = 30;
@@ -34,16 +41,17 @@ const ARRIVE_MIN = 30;
 export async function onRequestGet({ request }) {
   const url = new URL(request.url);
   const dateOverride = url.searchParams.get("date"); // YYYY-MM-DD (optional, for testing)
+  const debug = url.searchParams.get("debug") === "1";
 
   try {
     const target = targetArrival(dateOverride);
 
     const [from, to] = await Promise.all([
-      geocode(FROM_ADDRESS, FROM_FALLBACK),
-      geocode(TO_ADDRESS, TO_FALLBACK),
+      geocode(FROM_ADDRESS, FROM_ZIP, FROM_FALLBACK),
+      geocode(TO_ADDRESS, TO_ZIP, TO_FALLBACK),
     ]);
 
-    const itineraries = await plan(from, to, target.iso);
+    const itineraries = await plan(from.pick, to.pick, target.iso);
 
     // Keep only journeys that actually arrive at/before 08:30, newest first.
     const targetMs = new Date(target.iso).getTime();
@@ -53,18 +61,35 @@ export async function onRequestGet({ request }) {
       .slice(0, 5)
       .map(simplify);
 
-    return json({
+    const body = {
       app: "Quinlan ReisApp",
       generatedAt: new Date().toISOString(),
       timezone: TZ,
       arriveBy: target.iso,
       arriveByLabel: "08:30",
       travelDate: target.date,
-      from: { address: FROM_ADDRESS, name: from.name, lat: from.lat, lon: from.lon },
-      to: { address: TO_ADDRESS, name: to.name, lat: to.lat, lon: to.lon },
+      // Het thuisadres blijft geheim — geen adres of coördinaten naar buiten.
+      from: { name: FROM_LABEL },
+      to: { address: TO_ADDRESS, name: to.pick.name },
       count: options.length,
       options,
-    });
+    };
+
+    if (debug) {
+      // Diagnostics: coords rounded to ~1 km so the origin stays vague.
+      const vague = (p) => ({ name: p.name, zip: p.zip || null, lat: round2(p.lat), lon: round2(p.lon), via: p.via });
+      body.debug = {
+        from: vague(from.pick),
+        to: vague(to.pick),
+        fromCandidates: from.candidates,
+        toCandidates: to.candidates,
+        rawItineraries: itineraries.length,
+        rawArrivals: itineraries.map((it) => it.endTime).slice(0, 15),
+        keptAfterFilter: options.length,
+      };
+    }
+
+    return json(body);
   } catch (err) {
     return json(
       { error: true, message: String(err && err.message ? err.message : err) },
@@ -73,31 +98,49 @@ export async function onRequestGet({ request }) {
   }
 }
 
+const round2 = (n) => (typeof n === "number" ? Math.round(n * 100) / 100 : n);
+
 // --- MOTIS calls ----------------------------------------------------------
 
-async function geocode(text, fallback) {
-  const qs = new URLSearchParams({
-    text,
-    numResults: "5",
-    place: `${ALMERE_BIAS.lat},${ALMERE_BIAS.lon}`,
-    language: "nl",
-  });
-  try {
-    const res = await fetch(`${MOTIS}/api/v1/geocode?${qs}`, {
-      headers: { Accept: "application/json", "User-Agent": UA },
-    });
-    if (!res.ok) throw new Error(`geocode ${res.status}`);
-    const matches = await res.json();
-    if (!Array.isArray(matches) || matches.length === 0) throw new Error("no match");
-    // Prefer a result in Almere; otherwise take the highest-scoring one.
-    const inAlmere = matches.find((m) =>
-      JSON.stringify(m.areas || []).toLowerCase().includes("almere")
-    );
-    const best = inAlmere || matches[0];
-    return { lat: best.lat, lon: best.lon, name: best.name || text };
-  } catch (_) {
-    return fallback; // never let the gag app fully fail
+/**
+ * Geocode with a zip-code sanity check.
+ * Returns { pick: {lat,lon,name,zip,via}, candidates: [...] } and never throws.
+ */
+async function geocode(text, zipPrefix, fallback) {
+  const attempts = [
+    // Full-fat: bias towards Almere, Dutch labels.
+    new URLSearchParams({ text, numResults: "8", language: "nl", place: `${ALMERE_BIAS.lat},${ALMERE_BIAS.lon}`, placeBias: "2" }),
+    // Minimal retry in case an optional param is rejected.
+    new URLSearchParams({ text }),
+  ];
+  const candidates = [];
+  for (const qs of attempts) {
+    try {
+      const res = await fetch(`${MOTIS}/api/v1/geocode?${qs}`, {
+        headers: { Accept: "application/json", "User-Agent": UA },
+      });
+      if (!res.ok) continue;
+      const matches = await res.json();
+      if (!Array.isArray(matches) || matches.length === 0) continue;
+
+      for (const m of matches.slice(0, 8)) {
+        candidates.push({ name: m.name, zip: m.zip || null, score: m.score });
+      }
+      // 1) exact zip prefix match (e.g. "1361...") — the address itself
+      const zipHit = matches.find((m) => (m.zip || "").replace(/\s/g, "").startsWith(zipPrefix));
+      // 2) otherwise anything in Almere
+      const almereHit = matches.find((m) =>
+        JSON.stringify(m.areas || []).toLowerCase().includes("almere")
+      );
+      const best = zipHit || almereHit || matches[0];
+      return {
+        pick: { lat: best.lat, lon: best.lon, name: best.name || text, zip: best.zip || null, via: zipHit ? "zip" : almereHit ? "almere" : "first" },
+        candidates,
+      };
+    } catch (_) { /* try next attempt */ }
   }
+  // Never let the gag app fully fail.
+  return { pick: { ...fallback, zip: null, via: "fallback" }, candidates };
 }
 
 async function plan(from, to, timeISO) {
@@ -106,7 +149,10 @@ async function plan(from, to, timeISO) {
     toPlace: `${to.lat},${to.lon}`,
     time: timeISO,
     arriveBy: "true",
-    numItineraries: "12",
+    // MOTIS' default searchWindow is only 15 minutes — far too narrow to
+    // collect "the last 5 departures before 08:30". Use a 3-hour window.
+    searchWindow: String(3 * 3600),
+    numItineraries: "15",
     transitModes: "TRANSIT",
     pedestrianProfile: "FOOT",
   });
