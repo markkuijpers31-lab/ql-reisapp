@@ -59,11 +59,13 @@ npm run dev          # wrangler pages dev (serves public/ + functions/)
 
 Open http://localhost:8788 and tap **PLAN MIJN RIT**.
 
-Regenerate the icons after changing the train sprite:
+The app icon is Quinlan himself (grinning, arcade sunburst, pixel platform).
+Regenerate after changing the portrait sprite:
 
 ```bash
-npm run gen:assets   # writes public/icons/icon.svg + rasteriser HTML
-# then rasterise the *.html to PNG with any headless browser
+npm run gen:assets   # writes public/icons/icon.svg + rasterize.html
+# then: chromium --headless --dump-dom public/icons/rasterize.html
+# and save the base64 <div>s as PNGs (viewport-independent, pixel-perfect)
 ```
 
 ## Deploy to Cloudflare Pages

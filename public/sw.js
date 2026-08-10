@@ -3,7 +3,7 @@
  * - push notifications (ready for the daily morning wake-up)
  */
 
-const CACHE = "qlr-v1";
+const CACHE = "qlr-v2";
 const SHELL = [
   "./",
   "./index.html",
