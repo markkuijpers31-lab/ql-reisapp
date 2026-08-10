@@ -1,0 +1,35 @@
+# Cloudflare Workers configuration for Quinlan ReisApp
+# One worker serves the PWA (static assets), the /api/* routes AND the
+# daily push cron.
+#
+# Deploy:  npx wrangler deploy
+# Dev:     npx wrangler dev
+
+name = "quinlan-reisapp"
+main = "src/worker.js"
+compatibility_date = "2025-06-01"
+
+# The 8-bit PWA. run_worker_first makes sure /api/* always hits the worker.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# Weekday mornings (cron is UTC): 05:15 UTC ~ 07:15 NL zomertijd.
+# Wintertijd-variant: "15 6 * * 1-5". Zonder KV/VAPID-config is dit een no-op.
+[triggers]
+crons = ["15 5 * * 1-5"]
+
+[vars]
+VAPID_SUBJECT = "mailto:admin@example.com"
+# VAPID_PUBLIC_KEY = "<base64url public key uit: npm run gen:vapid>"
+
+# --- Push notifications (optioneel, zie README) ---------------------------
+# KV namespace die de browser-subscriptions bewaart.
+# Aanmaken:  npx wrangler kv namespace create SUBSCRIPTIONS
+# [[kv_namespaces]]
+# binding = "SUBSCRIPTIONS"
+# id = "<your-kv-namespace-id>"
+
+# Private key als secret (nooit committen):
+#   npx wrangler secret put VAPID_PRIVATE_JWK
