@@ -1,0 +1,24 @@
+# Cloudflare Worker that sends the daily morning push.
+# Deploy from this folder:  cd worker && npx wrangler deploy
+name = "quinlan-reisapp-push"
+main = "daily-push.js"
+compatibility_date = "2024-11-01"
+
+# Weekday mornings. Cron is in UTC.
+# 05:15 UTC ~ 07:15 in NL summer (CEST). Add a winter line if you like:
+#   "15 6 * * 1-5"  ~ 07:15 in NL winter (CET)
+[triggers]
+crons = ["15 5 * * 1-5"]
+
+[vars]
+VAPID_SUBJECT = "mailto:admin@example.com"
+# VAPID_PUBLIC_KEY is set here (public, non-secret):
+# VAPID_PUBLIC_KEY = "<base64url public key from tools/gen-vapid.mjs>"
+
+# Share the same KV namespace the Pages app writes subscriptions to:
+# [[kv_namespaces]]
+# binding = "SUBSCRIPTIONS"
+# id = "<your-kv-namespace-id>"
+
+# Set the private key as a secret (never commit it):
+#   cd worker && npx wrangler secret put VAPID_PRIVATE_JWK

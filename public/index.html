@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#12132b" />
+  <title>Quinlan ReisApp</title>
+  <meta name="description" content="Elke ochtend de laatste 5 OV-ritten die je nog om 08:30 op je werk krijgen. Of niet." />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+
+  <!-- 8-bit lettertype (valt terug op monospace als offline) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- pixel wolkjes op de achtergrond -->
+  <div class="sky" aria-hidden="true">
+    <span class="cloud c1"></span>
+    <span class="cloud c2"></span>
+    <span class="cloud c3"></span>
+  </div>
+
+  <main class="screen">
+    <header class="hero">
+      <h1 class="logo">QUINLAN<br /><span>REIS&middot;APP</span></h1>
+      <p class="tagline">▶ DAGELIJKS 1 RIT &nbsp;·&nbsp; OV-EXCUUS GENERATOR</p>
+    </header>
+
+    <!-- rijdende trein animatie -->
+    <section class="track-scene" aria-hidden="true">
+      <div class="rail"></div>
+      <div class="runner" id="runner"></div>
+    </section>
+
+    <section class="route-card">
+      <div class="route-line">
+        <span class="dot start"></span>
+        <div class="route-text">
+          <b>VERTREK</b>
+          <span>Verlengde Duinvallei 131, Almere</span>
+        </div>
+      </div>
+      <div class="route-pipe"></div>
+      <div class="route-line">
+        <span class="dot end" id="flagSlot"></span>
+        <div class="route-text">
+          <b>AANKOMST · 08:30</b>
+          <span>Rondebeltweg 51, Almere</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="planBtn" class="btn btn-primary">▶ PLAN MIJN RIT</button>
+      <button id="pushBtn" class="btn btn-ghost" title="Zet ochtendmeldingen aan">🔔 WEK MIJ</button>
+    </div>
+
+    <p class="hint" id="dateHint"></p>
+
+    <section id="results" class="results" aria-live="polite"></section>
+
+    <footer class="footer">
+      <p>Data: <b>Transitous</b> (MOTIS / OV Nederland) · Een grapje 🎮</p>
+      <p class="tiny" id="status"></p>
+    </footer>
+  </main>
+
+  <script src="./sprites.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

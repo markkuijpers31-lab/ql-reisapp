@@ -1,0 +1,16 @@
+{
+  "name": "quinlan-reisapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "8-bit PWA die elke ochtend de laatste 5 OV-ritten naar het werk toont (om 08:30 aan te komen). Een grapje voor een collega die altijd te laat is.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy",
+    "gen:assets": "node tools/gen-assets.mjs",
+    "gen:vapid": "node tools/gen-vapid.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

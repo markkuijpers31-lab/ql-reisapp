@@ -1,0 +1,16 @@
+# Cloudflare Pages configuration for Quinlan ReisApp
+# Deploy:  npx wrangler pages deploy
+name = "quinlan-reisapp"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "public"
+
+# --- Optional bindings (uncomment once you set up push notifications) -----
+# KV namespace that stores browser push subscriptions.
+# Create it with:  npx wrangler kv namespace create SUBSCRIPTIONS
+# [[kv_namespaces]]
+# binding = "SUBSCRIPTIONS"
+# id = "<your-kv-namespace-id>"
+
+# Set these as encrypted environment variables in the Pages project settings:
+#   VAPID_PUBLIC_KEY   base64url public key (also used by the browser)
+#   (the private key lives only in the cron worker, see worker/)
