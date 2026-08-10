@@ -35,7 +35,9 @@
   // ======================================================================
   //  GAME STATE
   // ======================================================================
-  const SAVE_KEY = "qlr.save.v1";
+  // v2: XP-formule gebalanceerd; oude (opgeblazen) saves resetten bewust.
+  const SAVE_KEY = "qlr.save.v2";
+  try { localStorage.removeItem("qlr.save.v1"); } catch (_) {}
   const defaultState = {
     xp: 0, coins: 0, streak: 0, plays: 0,
     lastPlay: null, minMargin: null, maxMargin: 0,
@@ -210,6 +212,7 @@
   const localDate = () => new Date().toLocaleDateString("en-CA");
   const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toLocaleDateString("en-CA"); };
   const marginMin = (targetIso, arriveIso) => Math.round((new Date(targetIso) - new Date(arriveIso)) / 60000);
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 
   function stateBox(bigText, subText) {
     els.results.innerHTML =
@@ -239,7 +242,8 @@
     const best = index === 0; // latest arrival = the classic "last chance"
     const margin = currentTarget ? marginMin(currentTarget, opt.arriveTime) : 0;
     const risk = riskFor(margin);
-    const pts = 20 + margin * 2 + (3 - Math.min(3, opt.transfers)) * 5;
+    // Clamp zodat rare API-marges nooit tot XP-inflatie leiden.
+    const pts = 10 + clamp(margin, 0, 25) + (3 - Math.min(3, opt.transfers)) * 5;
 
     const legsHtml = opt.legs.map((leg, i) => {
       const isWalk = ["WALK", "FOOT", "BIKE"].includes((leg.mode || "").toUpperCase());
@@ -286,7 +290,8 @@
 
     const margins = opts.map((o) => marginMin(data.arriveBy, o.arriveTime));
     const lastMargin = Math.min(...margins); // the last-chance buffer
-    const safeMargin = Math.max(...margins);
+    // Clamp: bij API-gekkigheid (marges van uren) mag XP nooit exploderen.
+    const safeMargin = clamp(Math.max(...margins), 0, 25);
 
     // mood + quip based on the tightest option (the gag)
     let mood = "neutral";
@@ -314,11 +319,12 @@
       state.streak = state.lastPlay === yesterday() ? state.streak + 1 : 1;
       state.plays += 1;
       state.lastPlay = today;
-      gainedXP = 60 + safeMargin * 4 + opts.length * 10 + 100 /*dagbonus*/;
-      gainedCoins = Math.max(1, lastMargin) + 5 + state.streak * 2;
-      popXP("DAGBONUS +100", "var(--yellow)");
+      // Max ~130 XP per dag: level 2 na ±3 dagen, OV-Legende na ±3 weken streak.
+      gainedXP = 30 + safeMargin * 2 + opts.length * 5 + 40 /*dagbonus*/ + Math.min(state.streak, 7) * 3;
+      gainedCoins = clamp(lastMargin, 1, 15) + 5 + Math.min(state.streak, 10) * 2;
+      popXP("DAGBONUS +40", "var(--yellow)");
     } else {
-      gainedXP = 8; // oefen-XP bij opnieuw plannen
+      gainedXP = 3; // oefen-XP bij opnieuw plannen
       gainedCoins = 1;
     }
 

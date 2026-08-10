@@ -5,7 +5,9 @@
 # Deploy:  npx wrangler deploy
 # Dev:     npx wrangler dev
 
-name = "quinlan-reisapp"
+# Naam moet gelijk zijn aan de Workers Builds worker-naam (= repo-naam),
+# anders geeft elke build een config-mismatch warning.
+name = "ql-reisapp"
 main = "src/worker.js"
 compatibility_date = "2025-06-01"
 
