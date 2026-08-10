@@ -210,7 +210,138 @@ body {
 .footer b { color: var(--cyan); }
 .tiny { font-size: 7px; margin: 6px 0 0; color: #6d719c; }
 
+/* ======================================================================
+ *  GAMIFICATION
+ * ==================================================================== */
+
+/* --- HUD: Quinlan avatar + speech bubble ------------------------------- */
+.hud { display: flex; align-items: flex-start; gap: 12px; margin: 4px 0 14px; }
+.avatar {
+  flex: 0 0 auto;
+  background: var(--panel);
+  border: var(--pixel) solid var(--line);
+  box-shadow: 0 6px 0 0 var(--line);
+  padding: 6px;
+  cursor: pointer;
+  line-height: 0;
+  animation: idlebob 2.4s steps(2) infinite;
+}
+.avatar .sprite { width: 72px; height: auto; }
+.avatar:active { transform: translateY(3px); box-shadow: 0 3px 0 0 var(--line); }
+.avatar.jump { animation: jump .5s steps(4) 1; }
+.avatar.shake { animation: shake .4s steps(2) 3; }
+@keyframes idlebob { 50% { transform: translateY(-2px); } }
+@keyframes jump { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+.bubble {
+  position: relative;
+  flex: 1 1 auto;
+  align-self: center;
+  background: var(--cyan);
+  color: var(--line);
+  border: var(--pixel) solid var(--line);
+  box-shadow: 0 6px 0 0 var(--line);
+  padding: 12px 12px;
+  font-size: 10px;
+  line-height: 1.7;
+  min-height: 44px;
+}
+.bubble::before {
+  content: "";
+  position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border: 8px solid transparent;
+  border-right-color: var(--line);
+}
+.bubble b { color: var(--red); }
+
+/* --- Stats bar --------------------------------------------------------- */
+.stats { display: flex; gap: 8px; margin: 0 0 16px; align-items: stretch; flex-wrap: wrap; }
+.stat {
+  background: var(--panel-2);
+  border: 3px solid var(--line);
+  box-shadow: 0 4px 0 0 var(--line);
+  padding: 8px 10px;
+}
+.stat-level { flex: 1 1 200px; }
+.lvl-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.lvl-top #levelNum { font-size: 9px; color: var(--yellow); }
+.lvl-top #levelTitle { font-size: 9px; color: var(--cyan); text-align: right; }
+.xpbar { height: 12px; background: var(--bg); border: 3px solid var(--line); overflow: hidden; }
+.xpbar i {
+  display: block; height: 100%; width: 0%;
+  background: repeating-linear-gradient(90deg, var(--green) 0 6px, #26a35f 6px 10px);
+  transition: width .5s steps(8);
+}
+.xptext { display: block; font-size: 7px; color: var(--ink-dim); margin-top: 5px; }
+.stat-mini { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px; }
+.stat-mini .ico { font-size: 16px; line-height: 1; }
+.stat-mini b { font-size: 14px; color: var(--yellow); margin-top: 2px; }
+.stat-mini small { font-size: 6px; color: var(--ink-dim); }
+.stat-sound { cursor: pointer; color: var(--ink); font-size: 16px; min-width: 44px; font-family: var(--font); }
+.stat-sound.off { opacity: .45; }
+.stat.bump { animation: bump .3s steps(3) 1; }
+@keyframes bump { 50% { transform: scale(1.15); } }
+
+/* --- Per-trip risk meter (stars + marge) ------------------------------- */
+.risk { display: flex; align-items: center; gap: 8px; margin: 2px 0 10px; }
+.stars { letter-spacing: 2px; font-size: 12px; color: #4a4f7a; }
+.stars .on { color: var(--yellow); }
+.marge { font-size: 8px; padding: 4px 6px; border: 3px solid var(--line); }
+.marge.good { background: var(--green); color: var(--line); }
+.marge.mid  { background: var(--yellow); color: var(--line); }
+.marge.bad  { background: var(--red); color: #fff; }
+.trip .pts { position: absolute; top: -14px; right: -6px; background: var(--panel-2); color: var(--yellow); font-size: 8px; padding: 5px 7px; border: 3px solid var(--line); box-shadow: 0 3px 0 0 var(--line); }
+
+/* --- Achievements ------------------------------------------------------ */
+.section-title { font-size: 11px; color: var(--yellow); margin: 26px 0 12px; letter-spacing: 1px; }
+.achievements { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 10px; }
+.badge {
+  background: var(--panel);
+  border: 3px solid var(--line);
+  box-shadow: 0 4px 0 0 var(--line);
+  padding: 10px 6px;
+  text-align: center;
+}
+.badge .b-ico { font-size: 22px; line-height: 1; filter: grayscale(1) brightness(.5); }
+.badge .b-name { display: block; font-size: 6px; color: var(--ink-dim); margin-top: 8px; line-height: 1.4; }
+.badge.unlocked { background: var(--panel-2); }
+.badge.unlocked .b-ico { filter: none; }
+.badge.unlocked .b-name { color: var(--yellow); }
+.badge.just { animation: bump .5s steps(4) 2; }
+
+/* --- Floating FX (xp popups, level up) --------------------------------- */
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
+.fx-pop {
+  position: absolute;
+  font-family: var(--font); font-size: 12px; color: var(--green);
+  text-shadow: 0 3px 0 var(--line);
+  animation: floatup 1.1s steps(11) forwards;
+}
+@keyframes floatup { to { transform: translateY(-70px); opacity: 0; } }
+
+.levelup {
+  position: fixed; inset: 0; z-index: 60; display: none;
+  align-items: center; justify-content: center; background: rgba(18,19,43,.86);
+}
+.levelup.show { display: flex; animation: blink .4s steps(2) 3; }
+.levelup .card {
+  background: var(--panel); border: var(--pixel) solid var(--yellow);
+  box-shadow: 0 8px 0 0 var(--line); padding: 26px 22px; text-align: center; max-width: 300px;
+}
+.levelup .card .sprite { width: 96px; margin: 0 auto 14px; }
+.levelup h3 { color: var(--yellow); font-size: 16px; margin: 0 0 8px; }
+.levelup p { color: var(--cyan); font-size: 10px; margin: 0 0 18px; line-height: 1.6; }
+
+/* --- Quinlan chaser on the track -------------------------------------- */
+.chaser { position: absolute; bottom: 6px; left: -70px; opacity: 0; }
+.chaser .sprite { width: 56px; height: auto; }
+.chaser.run { animation: drive 9s linear infinite; opacity: 1; }
+
 @media (max-width: 380px) {
   .times { font-size: 13px; }
   .btn { font-size: 9px; }
+  .avatar .sprite { width: 60px; }
+  .bubble { font-size: 9px; }
 }

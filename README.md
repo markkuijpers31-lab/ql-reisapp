@@ -29,8 +29,26 @@ Netherlands GTFS feeds. No API key required.
 - Geocoding: `GET https://api.transitous.org/api/v1/geocode`
 - Routing: `GET https://api.transitous.org/api/v6/plan?arriveBy=true`
 
-The custom pixel sprites for **train, bus, tram and metro** are hand-drawn in
-[`public/sprites.js`](public/sprites.js) and rendered as crisp, scalable SVG.
+The custom pixel sprites for **train, bus, tram and metro** — plus an 8-bit
+portrait of **Quinlan himself** (four moods: neutral, happy, panic, sleepy) —
+are hand-drawn in [`public/sprites.js`](public/sprites.js) and rendered as
+crisp, scalable SVG.
+
+### Gamification 🎮
+Quinlan is the mascot and the whole thing plays like a mini-game (state saved in
+`localStorage`):
+
+- **XP & levels** with playful Dutch ranks (Snooze-Rookie → OV-Legende) and a
+  level-up screen.
+- **Munten (coins)** and a **daily streak** 🔥 (plan every morning to keep it).
+- **Risk meter per rit**: stars + "marge" badge showing how tight each option is
+  (the *Laatste Kans* is the riskiest — that's the joke).
+- **Prestaties (achievements)**: Eerste Rit, Nippertje, Vroege Vogel, Alle
+  Voertuigen, OV-Legende, …
+- **Moods & quips**: Quinlan panics on a tight margin, grins with lots of slack,
+  and falls asleep if nothing makes 08:30. He also perpetually runs after the
+  train on the track. Poke him for an easter egg.
+- **Retro sound effects** (WebAudio, toggle with 🔊).
 
 ## Local development
 

@@ -107,6 +107,57 @@ const FLAG = [
   "........",
 ];
 
+// Quinlan himself — an 8-bit portrait drawn from his photo.
+// (brown skin, fade haircut, full goatee, ear stud, charcoal quarter-zip
+//  over a white tee with a silver zipper). Extra legend for this sprite:
+//   S/s skin + shadow · H hair · P brow/pupil · E eye white · B beard
+//   M lip · n nostril · Z/z sweater · W white tee · I zipper · R ear stud
+const QUINLAN = [
+  "......HHHHHH......",
+  "....HHHHHHHHHH....",
+  "...HHHHHHHHHHHH...",
+  "..HHHHHHHHHHHHHH..",
+  "..HHSSSSSSSSSSHH..",
+  "..HSSSSSSSSSSSSH..",
+  "..HSSPPSSSSPPSSH..",
+  "..HSSEPESSEPESSH..",
+  "..HSSSSSnnSSSSSH..",
+  "..RSSSSSnnSSSSSB..",
+  "..BSSSSBBBBSSSSB..",
+  "..BSSSSMMMMSSSSB..",
+  "..sSSBBBBBBBBSSs..",
+  "...ssBBBBBBBBss...",
+  "......sSSSSs......",
+  "....ZZZWWWWZZZ....",
+  ".ZZZZZWWIIWWZZZZZ.",
+  "ZZZZZZWWIIWWZZZZZZ",
+  "ZZZZZZZWIIWZZZZZZZ",
+  "ZZZZZZZZIIZZZZZZZZ",
+];
+
+const QUINLAN_PAL = {
+  H: "#17171f", S: "#8d5a3c", s: "#6b4329", E: "#f2efe6", P: "#241712",
+  B: "#221812", M: "#4e2c1e", n: "#5e3925", Z: "#2f333b", z: "#23262d",
+  W: "#f4f4f4", I: "#b9c4cf", R: "#eef0f8", o: "#3a2218", C: "#73eff7",
+};
+
+// Build a mood variant by swapping a couple of rows.
+function quinlanMood(mood) {
+  const g = QUINLAN.slice();
+  if (mood === "happy") {
+    g[11] = "..BSSSSMWWMSSSSB.."; // grin with teeth
+  } else if (mood === "panic") {
+    g[7] = "..HSEEEPEEPEEESH.."; // wide eyes
+    g[9] = "..RSSSSSnnSSSSCB.."; // sweat drop (C) on the cheek
+    g[11] = "..BSSSSMooMSSSSB.."; // small worried mouth
+  } else if (mood === "sleepy") {
+    g[6] = "..HSSSSSSSSSSSSH..";
+    g[7] = "..HSSPPSSSSPPSSH.."; // closed eyes
+    g[11] = "..BSSSSMooMSSSSB..";
+  }
+  return g;
+}
+
 // --- Palettes -------------------------------------------------------------
 
 const PAL = {
@@ -130,6 +181,11 @@ const SPRITES = {
   metro: { grid: METRO, pal: { ...PAL, G: "#2fbf71", S: "#c7d2dc" } }, // groene metro
   walk:  { grid: WALK,  pal: { ...PAL, B: "#4b6cff", S: "#f0c088" } }, // wandelaar
   flag:  { grid: FLAG,  pal: { ...PAL, R: "#e23b4e", W: "#f4f4f4" } }, // finish
+  // Quinlan, our hero — one entry per mood
+  quinlan:        { grid: QUINLAN,               pal: QUINLAN_PAL },
+  quinlan_happy:  { grid: quinlanMood("happy"),  pal: QUINLAN_PAL },
+  quinlan_panic:  { grid: quinlanMood("panic"),  pal: QUINLAN_PAL },
+  quinlan_sleepy: { grid: quinlanMood("sleepy"), pal: QUINLAN_PAL },
 };
 
 // --- Renderer -------------------------------------------------------------
